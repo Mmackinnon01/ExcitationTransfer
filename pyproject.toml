@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "qtransfer"
+version = "1.0.0"
+description = "Optimisation of excitation transfer in random quantum networks by discrete time-dependent Hamiltonian control using genetic algorithm optimisation"
+authors = [{name="Matthew Mackinnon"}]
+dependencies = [
+    "numpy>=1.24",
+    "scipy>=1.10",
+    "tqdm>=4.67"
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.black]
+line-length = 88
+
+[tool.ruff.lint.isort]
+combine-as-imports = true
+known-first-party = ["qtransfer"]
+
+[tool.ruff]
+line-length = 88
+
+[tool.ruff.lint]
+select = ["I"]
