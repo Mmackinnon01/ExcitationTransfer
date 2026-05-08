@@ -1,0 +1,8 @@
+Metadata-Version: 2.4
+Name: qtransfer
+Version: 1.0.0
+Summary: Optimisation of excitation transfer in random quantum networks by discrete time-dependent Hamiltonian control using genetic algorithm optimisation
+Author: Matthew Mackinnon
+Requires-Dist: numpy>=1.24
+Requires-Dist: scipy>=1.10
+Requires-Dist: tqdm>=4.67

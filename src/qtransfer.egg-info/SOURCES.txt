@@ -1,0 +1,8 @@
+README.md
+pyproject.toml
+src/qtransfer/__init__.py
+src/qtransfer.egg-info/PKG-INFO
+src/qtransfer.egg-info/SOURCES.txt
+src/qtransfer.egg-info/dependency_links.txt
+src/qtransfer.egg-info/requires.txt
+src/qtransfer.egg-info/top_level.txt
