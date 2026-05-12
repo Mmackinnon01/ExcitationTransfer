@@ -100,21 +100,21 @@ class Network:
         times = [ts * step for step in range(n_steps)]
         self.evolve(times)
         states = [state.matrix for state in self.log.state_log.values()]
-        adjs = [self.H_t(t).matrix for t in times]
+        adjs = [self.H_t(t).matrix.copy() for t in times]
         return animateConnections(adjs, states, ts, self.sink_locations)
 
     def animateEvolutionWithConnectionsSquare(self, ts, n_steps):
         times = [ts * step for step in range(n_steps)]
         self.evolve(times)
         states = [state.matrix for state in self.log.state_log.values()]
-        adjs = [self.H_t(t).matrix for t in times]
+        adjs = [self.H_t(t).matrix.copy() for t in times]
         return animateConnectionsSquare(adjs, states, ts, self.sink_locations)
 
     def animateEvolutionWithExcitationFlow(self, ts, n_steps):
         times = [ts * step for step in range(n_steps)]
         self.evolve(times)
         states = [state.matrix for state in self.log.state_log.values()]
-        adjs = [self.H_t(t).matrix for t in times]
+        adjs = [self.H_t(t).matrix.copy() for t in times]
         return animateExcitationFlow(adjs, states, ts, self.sink_locations)
 
     @property
@@ -124,7 +124,7 @@ class Network:
         return energy_captured .real
 
     @property
-    def control_cost(self):
+    def control_energy_cost(self):
         costs = [0]
 
         for t in self.control.times:
@@ -133,6 +133,20 @@ class Network:
             costs.append((state @ delta_h).trace())
 
         return sum(costs).real
+
+    @property
+    def control_entropy_cost(self):
+        costs = [0]
+
+        for t in self.control.times:
+            state = self.state_data[t]
+            ss_after = self.gen_l.steadyState(t, state)
+            ss_before = self.gen_l.steadyState(t-0.01, state)
+            relative_entropy_before = np.trace(state.matrix @ (logm(state.matrix) - logm(ss_before.matrix))).real
+            relative_entropy_after = np.trace(state.matrix @ (logm(state.matrix) - logm(ss_after.matrix))).real
+            costs.append(relative_entropy_after - relative_entropy_before)
+        
+        return sum(costs)
 
     def diagram(self):
         fig, ax = plt.subplots()
@@ -160,3 +174,19 @@ def controlHamiltonian(control_times, adjustments):
     
     return sum(components)
 
+def logm(rho):
+    evals, evecs = np.linalg.eigh(rho)
+    
+    # Initialize an array of zeros (or your proxy value)
+    log_evals = np.zeros_like(evals)
+    
+    # Only compute log where evals are sufficiently positive
+    mask = evals > 1e-15
+    log_evals[mask] = np.log(evals[mask])
+    
+    # For the indices where the mask is False, 
+    # they remain as 0.0 (since log(1) = 0) or you can 
+    # set them to your proxy value:
+    log_evals[~mask] = -100 
+        
+    return evecs @ np.diag(log_evals) @ evecs.conj().T
