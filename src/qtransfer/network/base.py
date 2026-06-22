@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
-from qsim.dynamics import Dynamics, GKSLGenerator, IVPPropagator, LiouvillianGenerator
+from qsim.dynamics import Dynamics, GKSLGenerator, RK4Propagator, LiouvillianGenerator
 from qsim.lin_alg import Operator, TOperator
 from qsim.logging import Logger
 from qsim.state import DensityMatrix
@@ -19,9 +19,11 @@ class Network:
         control: ControlSequence = ControlSequence([], []),
         sink_locations: list[int] = [],
         sink_coupling_strengths: list[float] = [],
-        local_loss_strengths: list[float] = []
+        local_loss_strengths: list[float] = [],
+        evolution_time = 10
     ) -> None:
         self._state_data = None
+        self._evolve_time = evolution_time
 
         self.n_network = A.shape[0]
         self.n_sinks = len(sink_coupling_strengths)
@@ -45,9 +47,9 @@ class Network:
 
     def setupDynamics(self):
         self.setupJumps()
-        self.prop = IVPPropagator()
+        self.prop = RK4Propagator()
         self.gen = GKSLGenerator(H = self.H_t , jumps=self.jumps)
-        self.gen_l = LiouvillianGenerator.fromGKSL(self.gen)
+        #self.gen_l = LiouvillianGenerator.fromGKSL(self.gen)
         self.log = Logger(log_state=True)
         self.dynam = Dynamics(self.prop, self.gen)
         self.dynam.addCallback(self.log.log)
@@ -87,13 +89,8 @@ class Network:
     @property
     def state_data(self):
         if self._state_data is None:
-            
-            if len(self.control.times)>0:
-                self.evolve(self.control.times)
-                self._state_data = self.log.state_log
-                self._state_data[-1] = self.steadyState(self.control.times[-1], self._state_data[self.control.times[-1]])
-            else:
-                self._state_data = {-1:self.steadyState(0, self.rho0)}
+            self.evolve(self.control.times + [self._evolve_time])
+            self._state_data = self.log.state_log
         return self._state_data
 
     def animateEvolutionWithConnections(self, ts, n_steps):
@@ -119,9 +116,9 @@ class Network:
 
     @property
     def energy_transfer(self):
-        energy_captured = np.sum(np.diag(self.state_data[-1].matrix)[self.n_network : self.n_network + self.n_sinks])
+        energy_captured = np.sum(np.diag(self.state_data[self._evolve_time].matrix)[self.n_network : self.n_network + self.n_sinks])
 
-        return energy_captured .real
+        return energy_captured.real
 
     @property
     def control_energy_cost(self):
